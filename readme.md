@@ -15,7 +15,7 @@ Dism++在设计之初就考虑到了这些安全问题，现在正式从Dism++�
 * 针对不支持 LOAD_LIBRARY_SEARCH_SYSTEM32 特性的系统，显式指定dll搜索顺序目录为System32。
 
 ### 1.2. 亮点
-* 使用YY-Guard后，对于直接依赖的dll，我们只需要吧设置为延迟加载即可免疫相关劫持行为。
+* 使用YY-Guard后，对于导入表直接引入的dll，我们只需要设置为延迟加载即可免疫类似劫持行为。
 * 对于代码显式 LoadLibrary 的行为，我们也提供了 `YY::LoadLibraryFormSystem32` 导出函数。
 
 ### 1.3. 劫持攻击示例
@@ -37,11 +37,10 @@ LoadLibraryW(L"C:\\Windows\\System32\\wimgapi.dll");
 这样难道就真的没有问题了吗？实际结果会让你大吃一惊，众所周知wimgapi.dll依赖于version.dll，具体自行去System32，用Depend工具查看wimgapi.dll的导入表。
 
 如果攻击者在你的程序根目录放一个加料版——version.dll，你的程序就会在加载wimgapi.dll时加载上加料版version.dll。
+假设你的程序路径在`D:\Dism++`，那么你的程序会在加载`C:\Windows\System32\wimgapi.dll`的同时顺道加载`D:\Dism++\version.dll`。
 
-假设你的程序路径在`D:\Dism++`，那么你的程序就会去加载`C:\Windows\System32\wimgapi.dll`的同时顺道加载上`D:\Dism++\version.dll`。
 
-
-不要害怕，YY-Guard能够解决此类问题，保障你的代码安全，你只需要这样做：
+这是不是有点吓人？不过不要害怕，YY-Guard能够解决此类问题，保障你的代码安全，你只需要这样做：
 ```C++
 
 //加载System32中加载wimgapi.dll以及他的依赖项。
@@ -54,12 +53,63 @@ YY::LoadLibraryFormSystem32(L"C:\\Program Files (x86)\\XXXX\\sites.dll");
 
 ```
 
+另外，对于通过导入表直接引入的DLL则可以设置为延迟加载，YY-Guard就能自动免疫此类型的攻击。
+
 ## 2. 使用YY-Guard
 1. 下载[YY-Guard-Binary](https://github.com/Chuyu-Team/YY-Guard/releases)，然后解压到你的工程目录。<br/>
 2. 【链接器】-【输入】-【附加依赖项】，添加`objs\$(PlatformShortName)\YY_Guard.obj`。<br/>
-3. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include "YY-Guard.h"）。
-4. 重新编译代码。
+3. 对于通过导入表直接引用的DLL，并且又能发生劫持的则设置为延迟加载（一般来说exe工程必须设置延迟加载，而dll项目则按自己喜好）。
+4. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include "YY-Guard.h"）。
+5. 重新编译代码。
 
+### 2.1. 注意事项
+1. 一般来说exe工程必须设置延迟加载，而dll项目则按自己喜好。因为exe在启动时没有机制能保证它的导入表从System32加载，因此必须设置为延迟加载。
+2. HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\KnownDLLs列表里的dll系统直接会抗劫持处理，对于这些列表里的可以不考虑劫持风险，但是不同版本的系统列表略有差异。
+3. 对于需要旁载的dll不建议添加抗劫持处理（比如COMCTL32.DLL，以及VC2008运行库），这可能会导致dll加载异常。
+4. 使用YY-Guard后，想要延迟加载，但是不想让他从System32目录加载的dll，请自行定义`__pfnDliNotifyHook2`的`dliNotePreLoadLibrary`通知，如下所示：
+
+
+```C++
+
+#include <DelayImp.h>
+
+//自己实现一份字符串比较，不要调用CRT或者其他函数，避免死锁！！！！！
+static int __fastcall __mystrcmpi(const char* scr,const char* dst)
+{
+	char f, l;
+
+	for (;;++scr,++dst)
+	{
+		f = __ascii_tolower(*scr);
+		l = __ascii_tolower(*dst);
+
+		if (f && f != l)
+			break;
+	}
+
+	return (int)(f - l);
+}
+
+
+//实现 __pfnDliNotifyHook2即可，用法跟微软原版的没多大区别，就是多了一个 INVALID_HANDLE_VALUE 跳过语义。
+extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLoadInfo  pdli)
+{
+	if(dliNotify == dliNotePreLoadLibrary)
+	{
+	     //对 Test.dll 自行安排加载行为，这里仅仅用作演示，实际不推荐直接 LoadLibrary！！！！
+	     if(__mystrcmpi(pdli->szDll,"Test.dll"))
+		 {
+		     auto hTestModule = LoadLibraryA("Test.dll");
+
+			 //返回 INVALID_HANDLE_VALUE，能让YY-Guard直接中断处理，如果返回 nullptr，则将继续执行默认行为。
+			 return hTestModule ? (FARPROC)hTestModule : (FARPROC)INVALID_HANDLE_VALUE;
+		 }
+	}
+
+	return nullptr;
+};
+
+```
 
 ## 3. YY-Guard兼容性
 ### 3.1. 支持的编译器
