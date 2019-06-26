@@ -97,7 +97,7 @@ extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLo
 	if(dliNotify == dliNotePreLoadLibrary)
 	{
 	     //对 Test.dll 自行安排加载行为，这里仅仅用作演示，实际不推荐直接 LoadLibrary！！！！
-	     if(__mystrcmpi(pdli->szDll,"Test.dll"))
+	     if(__mystrcmpi(pdli->szDll,"Test.dll") == 0)
 		 {
 		     auto hTestModule = LoadLibraryA("Test.dll");
 
