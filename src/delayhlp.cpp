@@ -28,7 +28,15 @@
 
 #define DLOAD_UNLOAD 1
 #include "dloadsup.h"
+
+#ifdef __YY_GUADD_BUILD_LIBS
+#include "..\YY-Guard.h"
+#else
 #include "YY-Guard.cpp"
+#endif
+
+using namespace YY;
+
 //
 // Local copies of strlen, memcmp, and memcpy to make sure we do not need the CRT
 //
@@ -282,7 +290,7 @@ __delayLoadHelper2(
             hmod = HMODULE(((*__pfnDliNotifyHook2)(dliNotePreLoadLibrary, &dli)));
             }
         if (hmod == 0 && hmod != INVALID_HANDLE_VALUE) {
-            hmod = YY::YY_LoadLibraryFormSystem32A(dli.szDll);
+            hmod = YY_LoadLibraryFormSystem32A(dli.szDll);
             }
         if (hmod == 0 || hmod == INVALID_HANDLE_VALUE) {
             dli.dwLastError = ::GetLastError();
