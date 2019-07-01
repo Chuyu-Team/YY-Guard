@@ -23,10 +23,6 @@
 //#define __YY_GUADR_USING_NTDLL_LIB 1
 
 
-
-//抑制 Delayimp.lib
-#pragma comment(linker, "/nodefaultlib:Delayimp.lib")
-
 namespace YY
 {
 	typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
@@ -124,6 +120,7 @@ namespace YY
 		//Windows 8以及更高平台直接支持 LOAD_LIBRARY_SEARCH_SYSTEM32
 		return LoadLibraryExW(lpLibFileName, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 #else
+		//我们引入 SafeLoadAvailable 动态判断是因为联想一键影音，会导致老系统 LoadLibraryExW 错误代码 变成 ERROR_ACCESS_DENIED，而不是预期的ERROR_INVALID_PARAMETER。
 		if (SafeLoadAvailable())
 		{
 			//如果支持安全加载，那么直接用就可以了。
