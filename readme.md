@@ -56,6 +56,15 @@ YY::LoadLibraryFormSystem32(L"C:\\Program Files (x86)\\XXXX\\sites.dll");
 另外，对于通过导入表直接引入的DLL则可以设置为延迟加载，YY-Guard就能自动免疫此类型的攻击。
 
 ## 2. 使用YY-Guard
+
+### 2.1. 通过NuGet引用（推荐）
+1. 项目右键 - 管理 NuGet 程序包。
+2. 在搜索框中输入YY-Cuard，然后点击安装。
+3. 项目属性 - YY-Guard - 启用安全延迟加载 - 『是』
+4. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include <YY-Guard.h>）。
+5. 重新编译代码。
+
+### 2.2. 传统方式引用
 1. 下载[YY-Guard-Binary](https://github.com/Chuyu-Team/YY-Guard/releases)，然后解压到你的工程目录。<br/>
 2. 【链接器】-【输入】-【附加依赖项】，添加`objs\$(PlatformShortName)\YY_Guard.obj`。<br/>
 3. 对于通过导入表直接引用的DLL，并且又能发生劫持的则设置为延迟加载（一般来说exe工程必须设置延迟加载，而dll项目则按自己喜好）。
@@ -122,3 +131,7 @@ extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLo
 
 ### 1.0.0.1 - 第一版（2019-06-24 18:00）
 * 第一正式版。
+
+
+### 1.0.0.2 - 改进体验（2019-12-20 19:30）
+* 添加 NuGet 支持。

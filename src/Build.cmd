@@ -30,12 +30,17 @@ goto:eof
 mkdir "Out\\%Platform%"
 mkdir "Libs\\%Platform%"
 
+del "Out\\%Platform%\\*" /q /s
+
 cl %AdditionalOptions% /D "__YY_GUADD_BUILD_LIBS" /D "__YY_GUARD_MIN_SUPPORT=%2" /Fo"Out\\%Platform%\\delayhlp.obj"  "%~dp0delayhlp.cpp"
-cl %AdditionalOptions% /D "__YY_GUARD_MIN_SUPPORT=%2" /Fo"Out\\%Platform%\\YY-Guard.obj"  "%~dp0YY-Guard.cpp"
 cl %AdditionalOptions% /Fo"Out\\%Platform%\\pfnDliFailureHook2.obj"  "%~dp0pfnDliFailureHook2.c"
 cl %AdditionalOptions% /Fo"Out\\%Platform%\\pfnDliNotifyHook2.obj"  "%~dp0pfnDliNotifyHook2.c"
 
 lib "Out\%Platform%\*.obj" /out:"Libs\%Platform%\%1"
+
+cl %AdditionalOptions% /D "__YY_GUARD_MIN_SUPPORT=%2" /Fo"Out\\%Platform%\\YY-Guard.obj"  "%~dp0YY-Guard.cpp"
+
+lib "Out\%Platform%\YY-Guard.obj" /out:"Libs\%Platform%\YY-Guard.lib"
 
 echo "Libs\%Platform%\%1"
 
