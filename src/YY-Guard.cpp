@@ -278,6 +278,36 @@ namespace YY
 #endif
 	}
 
+	#pragma section(".CRT$XIB",long, read)
+
+	typedef int(__cdecl* _PIFV)(void);
+
+
+	static int __cdecl InitDefaultDllDirectories()
+	{
+		//重新调整dll默认搜索路径，把LOAD_LIBRARY_SEARCH_APPLICATION_DIR移除，减少运行时劫持。
+#if __YY_GUARD_MIN_SUPPORT >= NTDDI_WIN8
+		auto pSetDefaultDllDirectories = SetDefaultDllDirectories;
+#else
+		auto pSetDefaultDllDirectories = (decltype(SetDefaultDllDirectories)*)GetProcAddress(GetModuleHandleW(L"kernel32"), "SetDefaultDllDirectories");
+		if (!pSetDefaultDllDirectories)
+		{
+			return 0;
+		}
+#endif
+
+		pSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+		return 0;
+	}
+
+
+	EXTERN_C void* __cdecl YY_GUARD_InitDefaultDllDirectories()
+	{
+		__declspec(allocate(".CRT$XIB")) static _PIFV InitFV = InitDefaultDllDirectories;
+
+		return &InitFV;
+	}
 }
 
 

@@ -52,6 +52,15 @@ YY_LoadLibraryFormSystem32A(
 	);
 
 
+#if defined(_X86_)
+#define __Enable_YY_Guard_Runtime_DLL_Hijacking __pragma(comment(linker, "/include:_YY_GUARD_InitDefaultDllDirectories"))
+#elif defined(_AMD64_) || defined(_ARM_) || defined(_ARM64_)
+#define __Enable_YY_Guard_Runtime_DLL_Hijacking __pragma(comment(linker, "/include:YY_GUARD_InitDefaultDllDirectories"))
+#else
+//未知体系，什么也不做，仅用于编译通过处理。
+#define __Enable_YY_Guard_Runtime_DLL_Hijacking
+#endif
+
 EXTERN_C_END
 
 

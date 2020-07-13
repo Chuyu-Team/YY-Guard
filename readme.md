@@ -61,15 +61,17 @@ YY::LoadLibraryFormSystem32(L"C:\\Program Files (x86)\\XXXX\\sites.dll");
 1. 项目右键 - 管理 NuGet 程序包。
 2. 在搜索框中输入YY-Cuard，然后点击安装。
 3. 项目属性 - YY-Guard - 启用安全延迟加载 - 『是』
-4. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include <YY-Guard.h>）。
-5. 重新编译代码。
+4. 项目属性 - YY-Guard - 启用运行时DLL抗劫持（仅exe可用，可选） - 『是』
+5. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include <YY-Guard.h>）。
+6. 重新编译代码。
 
 ### 2.2. 传统方式引用
 1. 下载[YY-Guard-Binary](https://github.com/Chuyu-Team/YY-Guard/releases)，然后解压到你的工程目录。<br/>
 2. 【链接器】-【输入】-【附加依赖项】，添加`objs\$(PlatformShortName)\YY_Guard.obj`。<br/>
 3. 对于通过导入表直接引用的DLL，并且又能发生劫持的则设置为延迟加载（一般来说exe工程必须设置延迟加载，而dll项目则按自己喜好）。
-4. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include "YY-Guard.h"）。
-5. 重新编译代码。
+4. 对于exe项目，如果需要针对第三方dll开启运行时显式Load抗劫持，则可以在WinMan或者main函数所在cpp，空白位置输入：`__Enable_YY_Guard_Runtime_DLL_Hijacking;`。
+5. 所有代码显式 LoadLibrary 的行为尽可能的替换为 YY::LoadLibraryFormSystem32（需要 #include "YY-Guard.h"）。
+6. 重新编译代码。
 
 ### 2.1. 注意事项
 1. 一般来说exe工程必须设置延迟加载，而dll项目则按自己喜好。因为exe在启动时没有机制能保证它的导入表从System32加载，因此必须设置为延迟加载。
@@ -135,3 +137,7 @@ extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLo
 
 ### 1.0.0.2 - 改进体验（2019-12-20 19:30）
 * 添加 NuGet 支持。
+
+
+### 1.0.1.1 - 改进支持
+* 添加运行时抗劫持支持（需要Windows 8或者安装KB2533623补丁的Windows Vista、Windows 7才能正常发挥功效）。
