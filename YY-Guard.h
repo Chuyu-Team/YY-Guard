@@ -14,7 +14,9 @@
 
 
 
-EXTERN_C_START
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //C API
 
@@ -61,7 +63,10 @@ YY_LoadLibraryFormSystem32A(
 #define __Enable_YY_Guard_Runtime_DLL_Hijacking
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
+
 
 
 
