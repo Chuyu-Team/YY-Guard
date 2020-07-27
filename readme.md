@@ -141,3 +141,7 @@ extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLo
 
 ### 1.0.1.1 - 改进支持
 * 添加运行时抗劫持支持（需要Windows 8或者安装KB2533623补丁的Windows Vista、Windows 7才能正常发挥功效）。
+
+
+### 1.0.1.2 - 改进支持
+* 解决Bug，解决Windows XP兼容性问题。

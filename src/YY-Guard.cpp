@@ -1,5 +1,12 @@
 ﻿#define WIN32_LEAN_AND_MEAN
+
+
+#define UMDF_USING_NTSTATUS
+
+#include <ntstatus.h>
 #include <Windows.h>
+
+typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 
 
 #ifndef __YY_GUARD_MIN_SUPPORT
@@ -25,7 +32,6 @@
 
 namespace YY
 {
-	typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 
 	typedef struct _UNICODE_STRING {
 		USHORT Length;
@@ -228,7 +234,7 @@ namespace YY
 		if (Status >= 0)
 			RtlWow64EnableFsRedirectionEx(OldFsRedirectionLevel, &OldFsRedirectionLevel)
 		#else
-		if (Status >= 0 && pRtlWow64EnableFsRedirectionEx)
+		if (Status >= 0 && pRtlWow64EnableFsRedirectionEx != INVALID_HANDLE_VALUE)
 			pRtlWow64EnableFsRedirectionEx(OldFsRedirectionLevel, &OldFsRedirectionLevel);
 		#endif
 #endif

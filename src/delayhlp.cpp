@@ -21,8 +21,16 @@
 
 
 #define WIN32_LEAN_AND_MEAN
+
+
+#define UMDF_USING_NTSTATUS
+
+#include <ntstatus.h>
+
 #define STRICT
 #include <Windows.h>
+
+typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 
 #include "delayimp.h"
 
