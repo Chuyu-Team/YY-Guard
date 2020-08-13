@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <IncludePath>$(MSBuildThisFileDirectory)include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(EnableDelayimpGuard)'=='true'">$(MSBuildThisFileDirectory)Libs\$(PlatformShortName);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalDependencies>$(MSBuildThisFileDirectory)Libs\$(PlatformShortName)\YY-Guard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <!--启用运行时抗劫持时引入 YY_GUARD_InitDefaultDllDirectories-->
+  <ItemDefinitionGroup Condition=" ('$(Enable_YY_Guard_Runtime_DLL_Hijacking)' == 'true') and ('$(ConfigurationType)'=='Application')">
+    <Link>
+      <ForceSymbolReferences Condition="'$(PlatformShortName)' == 'x86'">_YY_GUARD_InitDefaultDllDirectories</ForceSymbolReferences>
+      <ForceSymbolReferences Condition="'$(PlatformShortName)' != 'x86'">YY_GUARD_InitDefaultDllDirectories</ForceSymbolReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  
+  <ItemGroup>
+    <!-- 属性页配置 -->
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)YY-Guard_ui_8C8C5BC5-EF9B-44A0-8CF5-1BC0CC9F0156.xml" Condition=" '$(ConfigurationType)'!='Application' "/>
+    
+    <!--exe工程才显示dll运行时劫持选项-->
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)YY-Guard_ui_with_Runtime_DLL_Hijacking.xml" Condition=" '$(ConfigurationType)'=='Application' "/>
+ </ItemGroup>
+</Project>

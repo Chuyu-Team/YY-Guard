@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata minClientVersion="2.5">
+    <id>YY-Guard</id>
+    <version>$version$</version>
+    <title>YY-Guard</title>
+    <authors>YY</authors>
+    <owners>初雨团队</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/Chuyu-Team/YY-Guard</projectUrl>
+    <description>功能 —— 有效缓解DLL劫持攻击
+我们知道，加载dll时是有搜索顺序的，具体顺序可以参考MSDN —— dynamic-link-library-search-order。
+
+这个顺序给我们提供便利的同时也引入了安全隐患，比如的程序根目录放上修改版的 version.dll、msimg32.dll或者其他。如果你的程序直接或者间接的依赖了这些dll，那么极有可能被劫持。</description>
+    <summary>YY-Guard——有效缓解DLL劫持攻击。</summary>
+    <copyright>Copyright 2020</copyright>
+    <tags>Chuyu YY-Guard native nativepackage</tags>
+    <repository type="git" url="https://github.com/Chuyu-Team/YY-Guard.git" branch="master" commit="$commit$" />
+    <releaseNotes>
+      * 解决Bug，解决Windows XP兼容性问题。
+    </releaseNotes>
+  </metadata>
+  <files>
+    <file src=".\YY-Guard.h" target="build\native\include\YY-Guard.h" />
+    <file src=".\Libs\**" target="build\native\Libs" />
+    <file src=".\YY-Guard.targets" target="build\native\YY-Guard.targets" />
+    <file src=".\YY-Guard_ui_8C8C5BC5-EF9B-44A0-8CF5-1BC0CC9F0156.xml" target="build\native\YY-Guard_ui_8C8C5BC5-EF9B-44A0-8CF5-1BC0CC9F0156.xml" />
+    <file src=".\YY-Guard_ui_with_Runtime_DLL_Hijacking.xml" target="build\native\YY-Guard_ui_with_Runtime_DLL_Hijacking.xml" />
+  </files>
+</package>
