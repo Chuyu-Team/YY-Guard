@@ -5,7 +5,7 @@ pushd "%~dp0.."
 
 if "%Platform%"=="" set Platform=x86
 
-set AdditionalOptions=/O1 /Os /Oi /GS- /Z7 /MT /Zl /c /D "NDEBUG"
+set AdditionalOptions=/O1 /Os /Oi /GS- /Z7 /MT /Zl /c /D "NDEBUG" /guard:ehcont /Zc:sizedDealloc- /Zc:tlsGuards- /Zc:alignedNew-
 
 call:Build%Platform%
 
