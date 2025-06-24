@@ -1,0 +1,165 @@
+﻿name: Build&Test
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+  
+    - name: 恢复编译产物
+      id: BinCache
+      uses: actions/cache@v4
+      with:
+        path: |
+            objs
+            Libs
+        key: BinCache_${{github.sha}}
+
+    - name: 初始化
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+          mkdir -p Bin
+
+          Invoke-WebRequest -Uri https://github.com/Chuyu-Team/LibMaker/releases/download/v1.0.4/LibMaker.exe -OutFile Bin\LibMaker.exe
+
+          $ProgramFiles = ${env:ProgramFiles(x86)}
+
+          if (-not $ProgramFiles)
+          {
+              $ProgramFiles = $env:ProgramFiles
+          }
+          
+          $BuiltInVsWhereExe = "$ProgramFiles\Microsoft Visual Studio\Installer\vswhere.exe"
+
+          if (-not (Test-Path $BuiltInVsWhereExe))
+          {
+              throw "找不到vswhere.exe！"
+          }
+          
+          Write-Output $BuiltInVsWhereExe
+          
+          $LatestVisualStudioRoot = & $BuiltInVsWhereExe -latest -prerelease -property installationPath
+          
+          if (-not (Test-Path $LatestVisualStudioRoot))
+          {
+              throw "找不到 VisualStudioRoot！"
+          }
+          
+          echo "LatestVisualStudioRoot=$LatestVisualStudioRoot" >> $env:GITHUB_ENV
+          
+          $MSBuildBinPath="$LatestVisualStudioRoot\MSBuild\Current\Bin"
+          
+          if (-not (Test-Path $MSBuildBinPath))
+          {
+              $installationVersion = & $BuiltInVsWhereExe -latest -prerelease -property installationVersion
+              $majorVersion = "$installationVersion".Split('.')[0]
+              
+              $MSBuildBinPath="$LatestVisualStudioRoot\MSBuild\$majorVersion.0\Bin"
+          }
+          
+          if (-not (Test-Path $MSBuildBinPath))
+          {
+              throw "找不到 MSBuildBinPath！"
+          }
+          
+          echo "MSBuildBinPath=$MSBuildBinPath" >> $env:GITHUB_ENV
+          
+          if($env:GITHUB_REF.StartsWith("refs/tags/v", "CurrentCultureIgnoreCase"))
+          {
+              $BuildVersion = $env:GITHUB_REF.Remove(0, 11);
+              echo "BuildVersion=$BuildVersion" >> $env:GITHUB_ENV
+              
+              $Prerelease = $BuildVersion.contains("-");
+              echo "Prerelease=$Prerelease" >> $env:GITHUB_ENV
+
+              # github的内置版本有Bug，此行必须添加，否则无法获得内容
+              git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+
+              $releaseNotes = & git tag -l --format='%(contents)' $env:GITHUB_REF.Remove(0, 10)
+              echo " -p `"releaseNotes=$releaseNotes`"" | out-file metadata.txt
+              echo " -p version=$BuildVersion" | out-file metadata.txt -Append
+          }
+          else
+          {
+              $BuildVersion = "100.0.0-Alpha"
+              $releaseNotes = "CI Build"
+              echo " -p `"releaseNotes=$releaseNotes`"" | out-file metadata.txt
+              echo " -p version=$BuildVersion" | out-file metadata.txt -Append
+          }
+
+          echo " -p commit=$env:GITHUB_SHA" | out-file metadata.txt -Append
+
+    - name: 执行编译
+      if: steps.BinCache.outputs.cache-hit != 'true'
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: cmd
+      run: |
+          set Path=%GITHUB_WORKSPACE%\Bin;${{env.MSBuildBinPath}};%Path%
+          set LatestVisualStudioRoot=${{env.LatestVisualStudioRoot}}
+          setlocal
+          call "%LatestVisualStudioRoot%\VC\Auxiliary\Build\vcvarsamd64_x86.bat"
+          call "src\Build.cmd"
+          endlocal
+
+          setlocal
+          call "%LatestVisualStudioRoot%\VC\Auxiliary\Build\vcvars64.bat"
+          call "src\Build.cmd"
+          endlocal
+
+          setlocal
+          call "%LatestVisualStudioRoot%\VC\Auxiliary\Build\vcvarsamd64_arm.bat"
+          call "src\Build.cmd"
+          endlocal
+
+          setlocal
+          call "%LatestVisualStudioRoot%\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
+          call "src\Build.cmd"
+          endlocal
+
+    - name: 文件打包
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: cmd
+      run: |
+          7z a -tzip %GITHUB_WORKSPACE%\YY-Guard-Objs.zip objs LICENSE readme.md
+
+          ::打包Nuget
+          nuget pack YY-Guard.nuspec -p "Channel=CI" "@.\metadata.txt"
+                    
+    - uses: actions/upload-artifact@v4
+      with:
+        path: |
+            *.nupkg
+            *.zip
+
+    # 失败时我们收集一些信息，用于诊断
+    - uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: ErrorLog
+        path: |
+            Libs\**\*.*
+            objs\**\*.*
+            Out\**\*.*
+            metadata.txt
+
+    - uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: "YY-Guard-Objs.zip"
+        overwrite: true
+        tags: true
+        draft: false
+        prerelease: ${{env.Prerelease}}
+
+    - name: 内容发布
+      if: contains(github.ref, 'tags/')
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: cmd
+      run: |
+         :: 把生成的nuget包发布到nuget中
+         nuget push YY-Guard.${{env.BuildVersion}}.nupkg -ApiKey ${{ secrets.NUGET_TOKEN }} -Source https://api.nuget.org/v3/index.json
+

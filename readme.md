@@ -130,18 +130,4 @@ extern "C" const PfnDliHook __pfnDliNotifyHook2 = [](unsigned dliNotify,PDelayLo
 
 
 ## 更改日志
-
-### 1.0.0.1 - 第一版（2019-06-24 18:00）
-* 第一正式版。
-
-
-### 1.0.0.2 - 改进体验（2019-12-20 19:30）
-* 添加 NuGet 支持。
-
-
-### 1.0.1.1 - 改进支持
-* 添加运行时抗劫持支持（需要Windows 8或者安装KB2533623补丁的Windows Vista、Windows 7才能正常发挥功效）。
-
-
-### 1.0.1.2 - 改进支持
-* 解决Bug，解决Windows XP兼容性问题。
+* https://github.com/Chuyu-Team/YY-Guard/releases

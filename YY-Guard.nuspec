@@ -14,12 +14,10 @@
 
 这个顺序给我们提供便利的同时也引入了安全隐患，比如的程序根目录放上修改版的 version.dll、msimg32.dll或者其他。如果你的程序直接或者间接的依赖了这些dll，那么极有可能被劫持。</description>
     <summary>YY-Guard——有效缓解DLL劫持攻击。</summary>
-    <copyright>Copyright 2020</copyright>
-    <tags>Chuyu YY-Guard native nativepackage</tags>
+    <copyright>Copyright Chuyu</copyright>
+    <tags>native nativepackage</tags>
     <repository type="git" url="https://github.com/Chuyu-Team/YY-Guard.git" branch="master" commit="$commit$" />
-    <releaseNotes>
-      * 解决Bug，解决Windows XP兼容性问题。
-    </releaseNotes>
+    <releaseNotes>$releaseNotes$</releaseNotes>
   </metadata>
   <files>
     <file src=".\YY-Guard.h" target="build\native\include\YY-Guard.h" />
