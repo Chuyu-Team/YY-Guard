@@ -4,7 +4,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
   <Rule Name="CuyuTeam_8C8C5BC5-EF9B-44A0-8CF5-1BC0CC9F0156"
         PageTemplate="tool"
-        DisplayName="初雨团队">
+        DisplayName="NuGet程序包设置">
     <Rule.Categories>
       <Category Name="YY_Guard" DisplayName="YY-Guard" />
     </Rule.Categories>
@@ -18,6 +18,6 @@
 
     <BoolProperty Name="EnableDelayimpGuard" DisplayName="启用安全延迟加载" Description="启用后会将一些延迟加载的DLL从System32目录加载以及依赖项。" Category="YY_Guard"/>
 
-    <BoolProperty Name="Enable_YY_Guard_Runtime_DLL_Hijacking" DisplayName="启用运行时DLL抗劫持" Description="将LOAD_LIBRARY_SEARCH_APPLICATION_DIR从默认搜索顺序中移除，以抵御第三方库显式dll加载劫持（需要Windows 8或者安装KB2533623补丁的Windows Vista、Windows 7才能正常发挥功效）。" Category="YY_Guard"/>
+    <BoolProperty Name="Enable_YY_Guard_Runtime_DLL_Hijacking" DisplayName="启用运行时DLL抗劫持" Description="将LOAD_LIBRARY_SEARCH_APPLICATION_DIR从默认搜索顺序中移除，以抵御第三方库显式dll加载劫持（需要Windows 8或者更高才能正常发挥功效）。" Category="YY_Guard"/>
   </Rule>
 </ProjectSchemaDefinitions>

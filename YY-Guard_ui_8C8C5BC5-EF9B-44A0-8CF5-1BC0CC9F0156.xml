@@ -4,7 +4,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
   <Rule Name="CuyuTeam_8C8C5BC5-EF9B-44A0-8CF5-1BC0CC9F0156"
         PageTemplate="tool"
-        DisplayName="初雨团队">
+        DisplayName="NuGet程序包设置">
     <Rule.Categories>
       <Category Name="YY_Guard" DisplayName="YY-Guard" />
     </Rule.Categories>
