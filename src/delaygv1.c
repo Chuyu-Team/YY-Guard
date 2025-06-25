@@ -1,0 +1,2 @@
+
+int const __bChangeProtectionOfWholeDloadSection;

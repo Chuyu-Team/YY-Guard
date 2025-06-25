@@ -21,6 +21,7 @@ cl %AdditionalOptions% /Fo"objs\\%Platform%\\%1"  /D "__YY_GUARD_MIN_SUPPORT=%2"
 
 LibMaker.exe FixObj "%~dp0..\\objs\\%Platform%\\%1" /WeakExternFix:__pfnDliNotifyHook2=%PointType%
 LibMaker.exe FixObj "%~dp0..\\objs\\%Platform%\\%1" /WeakExternFix:__pfnDliFailureHook2=%PointType%
+LibMaker.exe FixObj "%~dp0..\\objs\\%Platform%\\%1" /WeakExternFix:__bChangeProtectionOfWholeDloadSection=4
 
 echo "objs\\%Platform%\\%1"
 goto:eof
@@ -35,6 +36,7 @@ del "Out\\%Platform%\\*" /q /s
 cl %AdditionalOptions% /D "__YY_GUADD_BUILD_LIBS" /D "__YY_GUARD_MIN_SUPPORT=%2" /Fo"Out\\%Platform%\\delayhlp.obj"  "%~dp0delayhlp.cpp"
 cl %AdditionalOptions% /Fo"Out\\%Platform%\\pfnDliFailureHook2.obj"  "%~dp0pfnDliFailureHook2.c"
 cl %AdditionalOptions% /Fo"Out\\%Platform%\\pfnDliNotifyHook2.obj"  "%~dp0pfnDliNotifyHook2.c"
+cl %AdditionalOptions% /Fo"Out\\%Platform%\\delaygv1.obj"  "%~dp0delaygv1.c"
 
 lib "Out\%Platform%\*.obj" /out:"Libs\%Platform%\%1"
 

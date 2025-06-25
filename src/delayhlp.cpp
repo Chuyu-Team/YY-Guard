@@ -37,6 +37,7 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define DLOAD_UNLOAD 1
 #include "dloadsup.h"
 
+#if 1
 #ifdef __YY_GUADD_BUILD_LIBS
 #include "..\YY-Guard.h"
 #else
@@ -44,9 +45,46 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #endif
 
 using namespace YY;
+#endif
+
+template<typename WRITE_FUNCTION>
+static inline
+VOID
+GuardedWrite(
+    _In_opt_ PVOID RangeStart,
+    _In_ SIZE_T RangeSize,
+    _In_ WRITE_FUNCTION writefunc
+    )
+{
+    BOOL bGuardedWrite =
+        (_load_config_used.GuardFlags & IMAGE_GUARD_PROTECT_DELAYLOAD_IAT) &&
+        (__bChangeProtectionOfWholeDloadSection == FALSE);
+
+    DWORD dwOldProtection;
+
+    if (bGuardedWrite) {
+        DloadLock();
+
+        DloadProtectSection(RangeStart,
+                            RangeSize,
+                            PAGE_READWRITE,
+                            &dwOldProtection);
+    }
+
+    writefunc();
+
+    if (bGuardedWrite) {
+        DloadProtectSection(RangeStart,
+                            RangeSize,
+                            dwOldProtection,
+                            &dwOldProtection);
+
+        DloadUnlock();
+    }
+}
 
 //
-// Local copies of strlen, memcmp, and memcpy to make sure we do not need the CRT
+// Local copies of strlen and memcmp to make sure we do not need the CRT
 //
 
 static inline size_t
@@ -72,23 +110,6 @@ __memcmp(const void * pv1, const void * pv2, size_t cb) {
         }
 
     return  *((unsigned char *)pv1) - *((unsigned char *)pv2);
-    }
-
-static inline void *
-__memcpy(void * pvDst, const void * pvSrc, size_t cb) {
-
-    void * pvRet = pvDst;
-
-    //
-    // copy from lower addresses to higher addresses
-    //
-    while (cb--) {
-        *(char *)pvDst = *(char *)pvSrc;
-        pvDst = (char *)pvDst + 1;
-        pvSrc = (char *)pvSrc + 1;
-        }
-
-    return pvRet;
     }
 
 
@@ -148,9 +169,23 @@ PinhFromImageBase(HMODULE hmod) {
 
 static inline
 void WINAPI
-OverlayIAT(PImgThunkData pitdDst, PCImgThunkData pitdSrc) {
-    __memcpy(pitdDst, pitdSrc, CountOfImports(pitdDst) * sizeof IMAGE_THUNK_DATA);
+OverlayIAT(PImgThunkData pitdDst, PCImgThunkData pitdSrc, unsigned countOfImports) {
+    unsigned i = 0;
+
+#if defined(_M_ARM64) || defined(_M_ARM64EC)
+    while (i + 8 <= countOfImports) {
+        uint64x2x4_t temp = vld1q_u64_x4((uint64_t const*)pitdSrc);
+        vst1q_u64_x4((uint64_t *)pitdDst, temp);
+        pitdSrc += 8;
+        pitdDst += 8;
+        i += 8;
     }
+#endif
+
+    for (; i < countOfImports; i++) {
+        *pitdDst++ = *pitdSrc++;
+    }
+}
 
 static inline
 DWORD WINAPI
@@ -183,7 +218,7 @@ PiddFromDllName(LPCSTR szDll) {
             // Check to see if it is the DLL we want
             // Intentionally case sensitive to avoid complication of using the CRT
             // for those that don't use the CRT...the user can replace this with
-            // a variant of a case insenstive comparison routine.
+            // a variant of a case insensitive comparison routine.
             //
             LPCSTR  szDllCur = PFromRva<LPCSTR>(pidd->rvaDLLName);
             size_t  cchDllCur = __strlen(szDllCur);
@@ -234,7 +269,7 @@ __delayLoadHelper2(
         };
 
     DelayLoadInfo   dli = {
-        sizeof DelayLoadInfo,
+        sizeof(DelayLoadInfo),
         pidd,
         ppfnIATEntry,
         idd.szName,
@@ -299,7 +334,7 @@ __delayLoadHelper2(
             }
         if (hmod == 0 && hmod != INVALID_HANDLE_VALUE) {
             hmod = YY_LoadLibraryFormSystem32A(dli.szDll);
-            }
+        }
         if (hmod == 0 || hmod == INVALID_HANDLE_VALUE) {
             dli.dwLastError = ::GetLastError();
             if (__pfnDliFailureHook2) {
@@ -314,6 +349,7 @@ __delayLoadHelper2(
                 PDelayLoadInfo  rgpdli[1] = { &dli };
 
                 DloadReleaseSectionWriteAccess();
+
                 RaiseException(
                     VcppException(ERROR_SEVERITY_ERROR, ERROR_MOD_NOT_FOUND),
                     0,
@@ -399,8 +435,10 @@ __delayLoadHelper2(
         }
 
 SetEntryHookBypass:
-    *ppfnIATEntry = pfnRet;
-
+    GuardedWrite(ppfnIATEntry,
+                 sizeof(*ppfnIATEntry),
+                 [ppfnIATEntry, pfnRet]() { *ppfnIATEntry = pfnRet; });
+    
 HookBypass:
     if (__pfnDliNotifyHook2) {
         dli.dwLastError = 0;
@@ -426,12 +464,20 @@ __FUnloadDelayLoadedDLL2(LPCSTR szDll) {
         HMODULE             hmod = *phmod;
         if (hmod != NULL) {
 
+            unsigned countOfImports = CountOfImports(PFromRva<PImgThunkData>(pidd->rvaIAT));
+
             DloadAcquireSectionWriteAccess();
 
-            OverlayIAT(
-                PFromRva<PImgThunkData>(pidd->rvaIAT),
-                PFromRva<PCImgThunkData>(pidd->rvaUnloadIAT)
-                );
+            GuardedWrite(PFromRva<PImgThunkData>(pidd->rvaIAT),
+                         countOfImports * sizeof(IMAGE_THUNK_DATA),
+                         [pidd, countOfImports]() {
+                             OverlayIAT(
+                                 PFromRva<PImgThunkData>(pidd->rvaIAT),
+                                 PFromRva<PCImgThunkData>(pidd->rvaUnloadIAT),
+                                 countOfImports
+                             );
+                         });
+
             ::FreeLibrary(hmod);
             *phmod = NULL;
 
